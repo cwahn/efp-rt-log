@@ -86,8 +86,8 @@ namespace efp {
             LogLevel level;
         };
 
-        constexpr uint8_t stl_string_data_capacity = sizeof(FormatedMessage);
-        constexpr uint8_t stl_string_head_capacity = stl_string_data_capacity - sizeof(size_t);
+        constexpr size_t stl_string_data_capacity = sizeof(FormatedMessage);
+        constexpr size_t stl_string_head_capacity = stl_string_data_capacity - sizeof(size_t);
 
         // Data structure for std::string preventing each char takes size of full Enum;
         struct StlStringHead {
@@ -380,7 +380,6 @@ namespace efp {
         }
 
         static inline void set_log_level(LogLevel log_level) {
-
             instance()._log_buffer.set_log_level(log_level);
         }
 
@@ -388,7 +387,14 @@ namespace efp {
             return instance()._log_buffer.get_log_level();
         }
 
-        static void set_output(FILE* output_file) {
+        static inline void set_log_period(std::chrono::milliseconds period) {
+            _period = period;
+        }
+
+        static inline std::chrono::milliseconds get_log_period() { return _period; }
+
+        static void
+        set_output(FILE* output_file) {
             instance()._log_buffer.set_output_file(output_file);
         }
 
@@ -449,24 +455,34 @@ namespace efp {
               _run(true),
               _thread([&]() {
                   while (_run.load()) {
+                      const auto start_time_point = std::chrono::steady_clock::now();
 #if EFP_LOG_TIME_STAMP == true
                       process_with_time();
 #else
                       process();
 #endif
-                      // todo periodic
-                      std::this_thread::sleep_for(std::chrono::milliseconds{1});
+                      const auto end_time_point = std::chrono::steady_clock::now();
+                      const auto elapsed_time =
+                          std::chrono::duration_cast<std::chrono::milliseconds>(
+                              end_time_point - start_time_point);
+
+                      if (elapsed_time < _period) {
+                          std::this_thread::sleep_for(_period - elapsed_time);
+                      }
                   }
               }) {
         }
 
+        static std::chrono::milliseconds _period;
+
         LogLevel _log_level;
 
         detail::LogBuffer _log_buffer;
-
         std::atomic<bool> _run;
         std::thread _thread;
     };
+
+    std::chrono::milliseconds Logger::_period = std::chrono::milliseconds(200);
 
     // LogLevel Logger::instance().log_level = LogLevel::Debug;
 
