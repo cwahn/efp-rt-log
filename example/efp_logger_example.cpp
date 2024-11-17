@@ -8,7 +8,7 @@ int main() {
     // Optional log level setting. Default is LogLevel::Info
     Logger::set_log_level(LogLevel::Trace);
 
-    // Optional log period setting. Default is 200ms
+    // Optional log period setting. Default is 20ms
     // Logger::set_log_period(std::chrono::milliseconds(1000));`
 
     // Optional log output setting. // default is stdout

@@ -452,7 +452,7 @@ namespace efp {
     protected:
     private:
         Logger()
-            : _period{200},
+            : _period{20},
               _run{true},
               _thread{[&]() {
                   while (_run.load()) {
