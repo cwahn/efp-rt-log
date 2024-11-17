@@ -9,7 +9,7 @@ int main() {
     Logger::set_log_level(LogLevel::Trace);
 
     // Optional log period setting. Default is 200ms
-    // Logger::set_log_period(std::chrono::milliseconds(1000));
+    // Logger::set_log_period(std::chrono::milliseconds(1000));`
 
     // Optional log output setting. // default is stdout
     // Logger::set_output("./efp_logger_test.log");

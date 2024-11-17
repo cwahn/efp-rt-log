@@ -17,7 +17,6 @@
 #define EFP_LOG_TIME_STAMP true
 #define EFP_LOG_BUFFER_SIZE 256
 // todo Maybe compile time log-level
-// todo Processing period configuration
 
 namespace efp {
     enum class LogLevel : char {
@@ -388,10 +387,12 @@ namespace efp {
         }
 
         static inline void set_log_period(std::chrono::milliseconds period) {
-            _period = period;
+            instance()._period = period;
         }
 
-        static inline std::chrono::milliseconds get_log_period() { return _period; }
+        static inline std::chrono::milliseconds get_log_period() {
+            return instance()._period;
+        }
 
         static void
         set_output(FILE* output_file) {
@@ -451,9 +452,9 @@ namespace efp {
     protected:
     private:
         Logger()
-            : // with_time_stamp(true),
-              _run(true),
-              _thread([&]() {
+            : _period{200},
+              _run{true},
+              _thread{[&]() {
                   while (_run.load()) {
                       const auto start_time_point = std::chrono::steady_clock::now();
 #if EFP_LOG_TIME_STAMP == true
@@ -470,21 +471,15 @@ namespace efp {
                           std::this_thread::sleep_for(_period - elapsed_time);
                       }
                   }
-              }) {
+              }} {
         }
 
-        static std::chrono::milliseconds _period;
-
-        LogLevel _log_level;
+        std::chrono::milliseconds _period;
 
         detail::LogBuffer _log_buffer;
         std::atomic<bool> _run;
         std::thread _thread;
     };
-
-    std::chrono::milliseconds Logger::_period = std::chrono::milliseconds(200);
-
-    // LogLevel Logger::instance().log_level = LogLevel::Debug;
 
     namespace detail {
 
