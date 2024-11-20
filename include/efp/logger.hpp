@@ -1,5 +1,5 @@
-#ifndef EFP_RT_LOG_HPP_
-#define EFP_RT_LOG_HPP_
+#ifndef EFP_LOGGER_HPP_
+#define EFP_LOGGER_HPP_
 
 #include <atomic>
 #include <chrono>
