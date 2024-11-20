@@ -15,7 +15,7 @@ CPMAddPackage(
     URL "https://github.com/cwahn/efp/archive/refs/tags/v0.1.1-beta.tar.gz"
 )
 
-# Neccessary for ESP32 support
+# Neccessary for ESPIDF support
 set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install/export")
 set(FMT_EXPORT OFF CACHE BOOL "Disable fmt export targets")
 CPMAddPackage(
