@@ -267,7 +267,7 @@ namespace efp {
             void dequeue() {
                 _read_buffer->pop_front().match(
                     [&](const PlainMessage& str) {
-                        if (_output_file == stdout) {
+                        if (_colored_output) {
                             fmt::print(_output_file, log_level_print_style(str.level), "{} ",
                                        log_level_cstr(str.level));
                         } else {
@@ -278,7 +278,7 @@ namespace efp {
                     },
                     [&](const FormatedMessage& fstr) {
                         collect_dyn_args(fstr.arg_num);
-                        if (_output_file == stdout) {
+                        if (_colored_output) {
                             fmt::print(_output_file, log_level_print_style(fstr.level), "{} ",
                                        log_level_cstr(fstr.level));
                         } else {
@@ -299,7 +299,7 @@ namespace efp {
                                               std::chrono::seconds>& time_point) {
                 _read_buffer->pop_front().match(
                     [&](const PlainMessage& msg) {
-                        if (_output_file == stdout) {
+                        if (_colored_output) {
                             fmt::print(_output_file, fg(fmt::color::gray),
                                        "{:%Y-%m-%d %H:%M:%S} ", time_point);
                             fmt::print(_output_file, log_level_print_style(msg.level), "{} ",
@@ -314,7 +314,7 @@ namespace efp {
                     [&](const FormatedMessage& msg) {
                         collect_dyn_args(msg.arg_num);
 
-                        if (_output_file == stdout) {
+                        if (_colored_output) {
                             fmt::print(_output_file, fg(fmt::color::gray),
                                        "{:%Y-%m-%d %H:%M:%S} ", time_point);
                             fmt::print(_output_file, log_level_print_style(msg.level), "{} ",
@@ -339,15 +339,22 @@ namespace efp {
 
             inline void set_log_level(LogLevel log_level) { _log_level = log_level; }
 
+            inline void set_colored_output(bool colored_output) {
+                _colored_output = colored_output;
+            }
+
             inline LogLevel get_log_level() { return _log_level; }
+
+            inline bool get_colored_output() { return _colored_output; }
 
         private:
             Spinlock _spinlock;
             Vcq<LogData, EFP_LOG_BUFFER_SIZE>* _read_buffer;
             Vcq<LogData, EFP_LOG_BUFFER_SIZE>* _write_buffer;
             fmt::dynamic_format_arg_store<fmt::format_context> _dyn_args;
-            LogLevel _log_level = LogLevel::Info;
-            std::FILE* _output_file = stdout;
+            LogLevel _log_level{LogLevel::Info};
+            std::FILE* _output_file{stdout};
+            bool _colored_output{true};
         };
 
     } // namespace detail
