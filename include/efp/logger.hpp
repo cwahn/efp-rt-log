@@ -1,5 +1,5 @@
-#ifndef EFP_RT_LOG_HPP_
-#define EFP_RT_LOG_HPP_
+#ifndef EFP_LOGGER_HPP_
+#define EFP_LOGGER_HPP_
 
 #include <atomic>
 #include <chrono>
@@ -17,7 +17,6 @@
 #define EFP_LOG_TIME_STAMP true
 #define EFP_LOG_BUFFER_SIZE 256
 // todo Maybe compile time log-level
-// todo Processing period configuration
 
 namespace efp {
     enum class LogLevel : char {
@@ -86,8 +85,8 @@ namespace efp {
             LogLevel level;
         };
 
-        constexpr uint8_t stl_string_data_capacity = sizeof(FormatedMessage);
-        constexpr uint8_t stl_string_head_capacity = stl_string_data_capacity - sizeof(size_t);
+        constexpr size_t stl_string_data_capacity = sizeof(FormatedMessage);
+        constexpr size_t stl_string_head_capacity = stl_string_data_capacity - sizeof(size_t);
 
         // Data structure for std::string preventing each char takes size of full Enum;
         struct StlStringHead {
@@ -236,7 +235,10 @@ namespace efp {
                                                       : stl_string_head_capacity);
 
                             // Extracting the remaining parts of the string if necessary
-                            size_t remaining_length = arg.length - stl_string_head_capacity;
+                            size_t remaining_length = arg.length > stl_string_head_capacity
+                                                          ? arg.length - stl_string_head_capacity
+                                                          : 0;
+
                             while (remaining_length > 0) {
                                 _read_buffer->pop_front().match(
                                     [&](const StlStringData& d) {
@@ -341,8 +343,8 @@ namespace efp {
 
         private:
             Spinlock _spinlock;
-            Vcq<LogData, EFP_LOG_BUFFER_SIZE>* _write_buffer;
             Vcq<LogData, EFP_LOG_BUFFER_SIZE>* _read_buffer;
+            Vcq<LogData, EFP_LOG_BUFFER_SIZE>* _write_buffer;
             fmt::dynamic_format_arg_store<fmt::format_context> _dyn_args;
             LogLevel _log_level = LogLevel::Info;
             std::FILE* _output_file = stdout;
@@ -377,7 +379,6 @@ namespace efp {
         }
 
         static inline void set_log_level(LogLevel log_level) {
-
             instance()._log_buffer.set_log_level(log_level);
         }
 
@@ -385,7 +386,16 @@ namespace efp {
             return instance()._log_buffer.get_log_level();
         }
 
-        static void set_output(FILE* output_file) {
+        static inline void set_log_period(std::chrono::milliseconds period) {
+            instance()._period = period;
+        }
+
+        static inline std::chrono::milliseconds get_log_period() {
+            return instance()._period;
+        }
+
+        static void
+        set_output(FILE* output_file) {
             instance()._log_buffer.set_output_file(output_file);
         }
 
@@ -442,30 +452,34 @@ namespace efp {
     protected:
     private:
         Logger()
-            : // with_time_stamp(true),
-              _run(true),
-              _thread([&]() {
+            : _period{20},
+              _run{true},
+              _thread{[&]() {
                   while (_run.load()) {
+                      const auto start_time_point = std::chrono::steady_clock::now();
 #if EFP_LOG_TIME_STAMP == true
                       process_with_time();
 #else
                       process();
 #endif
-                      // todo periodic
-                      std::this_thread::sleep_for(std::chrono::milliseconds{1});
+                      const auto end_time_point = std::chrono::steady_clock::now();
+                      const auto elapsed_time =
+                          std::chrono::duration_cast<std::chrono::milliseconds>(
+                              end_time_point - start_time_point);
+
+                      if (elapsed_time < _period) {
+                          std::this_thread::sleep_for(_period - elapsed_time);
+                      }
                   }
-              }) {
+              }} {
         }
 
-        LogLevel _log_level;
+        std::chrono::milliseconds _period;
 
         detail::LogBuffer _log_buffer;
-
         std::atomic<bool> _run;
         std::thread _thread;
     };
-
-    // LogLevel Logger::instance().log_level = LogLevel::Debug;
 
     namespace detail {
 

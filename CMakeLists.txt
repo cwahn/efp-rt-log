@@ -12,13 +12,14 @@ include("cmake/CPM.cmake")
 
 CPMAddPackage(
     NAME efp
-    VERSION 0.1.0-rc.5
-    URL "https://github.com/cwahn/efp/archive/refs/tags/v0.1.0-rc.4.tar.gz"
+    URL "https://github.com/cwahn/efp/archive/refs/tags/v0.1.1-beta.tar.gz"
 )
 
+# Neccessary for ESPIDF support
+set(FMT_INSTALL OFF CACHE BOOL "Disable fmt install/export")
+set(FMT_EXPORT OFF CACHE BOOL "Disable fmt export targets")
 CPMAddPackage(
     NAME fmt
-    VERSION 10.2.1
     URL "https://github.com/fmtlib/fmt/archive/refs/tags/10.2.1.tar.gz"
 )
 
